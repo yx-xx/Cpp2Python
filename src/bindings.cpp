@@ -62,13 +62,11 @@ PYBIND11_MODULE(CrpRobotPy, m) {
         .def("movej_absolute", &Crp::CrpRobot::movej_absolute,
              py::arg("target_joints"),  // 字典：{"j1": 角度, ..., "j6": 角度}
              py::arg("wait_ms") = 6000, // 等待运动完成的时间（ms）
-             py::arg("check_result") = true, // 是否打印运动后的实际位置
              "绝对关节控制（MoveJ）")
 
         .def("movel_absolute", &Crp::CrpRobot::movel_absolute,
              py::arg("target_pose"),   // 列表：[X, Y, Z, Rx, Ry, Rz]（单位：mm/度）
              py::arg("wait_ms") = 6000,
-             py::arg("check_result") = true,
              "绝对末端位置控制（MoveL）")
 
         .def("read_joints", &Crp::CrpRobot::read_joints, 

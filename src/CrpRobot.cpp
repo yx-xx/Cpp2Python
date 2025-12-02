@@ -33,29 +33,29 @@ bool CrpRobot::connect(const std::string& ip, int retry_times) {
 
     // 初始化SDK
     if (!loader->initialize()) {
-        std::cerr << "[错误] SDK初始化失败！请检查RobotService库是否存在\n";
+        std::cerr << "[CrpRobot] error: SDK初始化失败！\n";
         return false;
     }
 
     // 获取机器人服务接口
     robot = loader->getService<IRobotService>(ID_ROBOT_SERVICE);
     if (!robot) {
-        std::cerr << "[错误] 无法获取机器人服务接口\n";
+        std::cerr << "[CrpRobot] error: 无法获取机器人服务接口\n";
         return false;
     }
 
     // 重试连接逻辑
     for (int i = 0; i < retry_times; ++i) {
-        std::cout << "[信息] 第" << i + 1 << "次连接机器人: " << ip << "\n";
+        std::cout << "[CrpRobot] info: 第" << i + 1 << "次连接机器人: " << ip << "\n";
         // 关键参数：disableHardware=true（禁用硬件安全开关校验）
         if (robot->connect(ip.c_str(), true)) {
             connected = true;
             // 连接成功后切换到手动模式（上电前提）
             if (switch_to_manual_mode()) {
-                std::cout << "[成功] 连接机器人并切换到手动模式\n";
+                std::cout << "[CrpRobot] info: 连接机器人并切换到手动模式\n";
                 return true;
             } else {
-                std::cerr << "[警告] 连接成功但切换手动模式失败，重试连接...\n";
+                std::cerr << "[CrpRobot] error: 连接成功但切换手动模式失败，重试连接...\n";
                 robot->disconnect();
                 connected = false;
             }
@@ -63,7 +63,7 @@ bool CrpRobot::connect(const std::string& ip, int retry_times) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
-    std::cerr << "[错误] 连接机器人失败（IP: " << ip << "）\n";
+    std::cerr << "[CrpRobot] error: 连接机器人失败（IP: " << ip << "）\n";
     return false;
 }
 
@@ -72,7 +72,7 @@ void CrpRobot::disconnect() {
         // 下电并断开连接
         robot->servoPowerOff();
         robot->disconnect();
-        std::cout << "[信息] 机器人已断开连接\n";
+        std::cout << "[CrpRobot] info: 机器人已断开连接\n";
     }
     connected = false;
     servo_on = false;
@@ -98,31 +98,31 @@ bool CrpRobot::switch_to_manual_mode() {
 
 bool CrpRobot::servo_power_on(int retry_times) {
     if (!connected) {
-        std::cerr << "[错误] 未连接机器人，无法上电\n";
+        std::cerr << "[CrpRobot] error: 未连接机器人，无法上电\n";
         return false;
     }
 
     // 确保在手动模式
     if (!is_manual_mode()) {
-        std::cerr << "[错误] 不在手动模式，无法上电\n";
+        std::cerr << "[CrpRobot] error: 不在手动模式，无法上电\n";
         return false;
     }
 
     // 重试上电：一旦检测到上电成功就立即返回 true（不再重复尝试）
     for (int i = 0; i < retry_times; ++i) {
-        std::cout << "[信息] 第" << i + 1 << "次尝试上电\n";
+        std::cout << "[CrpRobot] info: 第" << i + 1 << "次尝试上电\n";
         if (robot->servoPowerOn()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
             if (robot->isServoOn()) {
                 servo_on = true;
-                std::cout << "[成功] 伺服上电完成\n";
+                std::cout << "[CrpRobot] info: 伺服上电完成\n";
                 return true; // <-- 成功立即返回，避免重复上电日志
             }
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 
-    std::cerr << "[错误] 伺服上电失败\n";
+    std::cerr << "[CrpRobot] error: 伺服上电失败\n";
     return false;
 }
 
@@ -130,7 +130,7 @@ bool CrpRobot::servo_power_off() {
     if (!connected || !servo_on) return false;
     if (robot->servoPowerOff()) {
         servo_on = false;
-        std::cout << "[信息] 伺服下电完成\n";
+        std::cout << "[CrpRobot] info: 伺服下电完成\n";
         return true;
     }
     return false;
@@ -169,7 +169,7 @@ std::vector<double> CrpRobot::read_end_pose() {
 }
 
 bool CrpRobot::movej_absolute(const std::map<std::string, double>& target_joints, 
-                                 int wait_ms, bool check_result) {
+                                 int wait_ms) {
     if (!connected || !servo_on || !is_manual_mode()) return false;
 
     // 构造目标关节数据
@@ -184,29 +184,21 @@ bool CrpRobot::movej_absolute(const std::map<std::string, double>& target_joints
 
     // 执行关节运动
     if (!robot->moveJ(target)) {
-        std::cerr << "[错误] 发送MoveJ指令失败\n";
+        std::cerr << "[CrpRobot] error: 发送MoveJ指令失败\n";
         return false;
     }
 
     // 等待运动完成
     if (!wait_for_movement(wait_ms)) {
-        std::cerr << "[错误] 运动超时\n";
+        std::cerr << "[CrpRobot] error: 运动超时\n";
         return false;
     }
 
-    // 检查结果
-    if (check_result) {
-        auto current = read_joints();
-        std::cout << "[信息] 运动后关节角：\n";
-        for (const auto& [joint, val] : current) {
-            std::cout << "  " << joint << ": " << val << "°\n";
-        }
-    }
     return true;
 }
 
 bool CrpRobot::movel_absolute(const std::vector<double>& target_pose, 
-                                 int wait_ms, bool check_result) {
+                                 int wait_ms) {
     if (!connected || !servo_on || !is_manual_mode() || target_pose.size() != 6) return false;
 
     // 构造目标位姿数据
@@ -221,23 +213,16 @@ bool CrpRobot::movel_absolute(const std::vector<double>& target_pose,
 
     // 执行直线运动
     if (!robot->moveL(target)) {
-        std::cerr << "[错误] 发送MoveL指令失败\n";
+        std::cerr << "[CrpRobot] error: 发送MoveL指令失败\n";
         return false;
     }
 
     // 等待运动完成
     if (!wait_for_movement(wait_ms)) {
-        std::cerr << "[错误] 运动超时\n";
+        std::cerr << "[CrpRobot] error: 运动超时\n";
         return false;
     }
 
-    // 检查结果
-    if (check_result) {
-        auto current = read_end_pose();
-        std::cout << "[信息] 运动后位姿：\n";
-        std::cout << "  X: " << current[0] << "mm, Y: " << current[1] << "mm, Z: " << current[2] << "mm\n";
-        std::cout << "  Rx: " << current[3] << "°, Ry: " << current[4] << "°, Rz: " << current[5] << "°\n";
-    }
     return true;
 }
 
