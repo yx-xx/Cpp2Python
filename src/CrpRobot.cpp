@@ -16,10 +16,7 @@ CrpRobot::CrpRobot()
 }
 
 CrpRobot::~CrpRobot() {
-    // 注意：不要在析构时自动断开连接（disconnect）。
-    // 自动断开会导致 Python 对象被回收时连接被意外关闭，
-    // 从而不能达到“下电但保持连接”的使用需求。
-    //
+
     // 仅释放 loader 资源（如果需要完整释放 SDK，请显式调用 disconnect()）。
     if (loader) {
         delete loader;
@@ -46,13 +43,13 @@ bool CrpRobot::connect(const std::string& ip, int retry_times) {
 
     // 重试连接逻辑
     for (int i = 0; i < retry_times; ++i) {
-        std::cout << "[CrpRobot] info: 第" << i + 1 << "次连接机器人: " << ip << "\n";
+        // std::cout << "[CrpRobot] info: 第" << i + 1 << "次连接机器人: " << ip << "\n";
         // 关键参数：disableHardware=true（禁用硬件安全开关校验）
         if (robot->connect(ip.c_str(), true)) {
             connected = true;
             // 连接成功后切换到手动模式（上电前提）
             if (switch_to_manual_mode()) {
-                std::cout << "[CrpRobot] info: 连接机器人并切换到手动模式\n";
+                // std::cout << "[CrpRobot] info: 连接机器人并切换到手动模式\n";
                 return true;
             } else {
                 std::cerr << "[CrpRobot] error: 连接成功但切换手动模式失败，重试连接...\n";
@@ -110,7 +107,7 @@ bool CrpRobot::servo_power_on(int retry_times) {
 
     // 重试上电：一旦检测到上电成功就立即返回 true（不再重复尝试）
     for (int i = 0; i < retry_times; ++i) {
-        std::cout << "[CrpRobot] info: 第" << i + 1 << "次尝试上电\n";
+        // std::cout << "[CrpRobot] info: 第" << i + 1 << "次尝试上电\n";
         if (robot->servoPowerOn()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
             if (robot->isServoOn()) {
