@@ -10,7 +10,6 @@ find_package(Python3 COMPONENTS Development Interpreter REQUIRED)
 
 # -------------------------------------------------------------------------
 # 配置参数
-# 供二次使用者覆写：cmake -S . -B build -DPY_MODULE_NAME=FooPy -DSDK_LIBS="/abs/path/libFoo.so"
 # -------------------------------------------------------------------------
 set(PY_MODULE_NAME "CrpRobotPy" CACHE STRING "最终生成的 Python 模块名（需与 PYBIND11_MODULE 保持一致）")
 set(CORE_TARGET_NAME "CrpRobot" CACHE STRING "封装 SDK 的 C++ 静态库 target 名称")
