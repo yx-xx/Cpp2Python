@@ -4,11 +4,13 @@
 #include <stdexcept>
 #include <cstring> // for memset
 #include <iostream>
+#include <cmath>   // for fabs
 
 namespace Crp {
 CrpRobot::CrpRobot() 
     : loader(nullptr)
     , robot(nullptr)
+    , model_service(nullptr)
     , connected(false)
     , servo_on(false) {
     // 初始化SDK加载器（默认加载RobotService库）
@@ -16,7 +18,10 @@ CrpRobot::CrpRobot()
 }
 
 CrpRobot::~CrpRobot() {
-
+    // 注意：不要在析构时自动断开连接（disconnect）。
+    // 自动断开会导致 Python 对象被回收时连接被意外关闭，
+    // 从而不能达到“下电但保持连接”的使用需求。
+    //
     // 仅释放 loader 资源（如果需要完整释放 SDK，请显式调用 disconnect()）。
     if (loader) {
         delete loader;
@@ -40,16 +45,22 @@ bool CrpRobot::connect(const std::string& ip, int retry_times) {
         std::cerr << "[CrpRobot] error: 无法获取机器人服务接口\n";
         return false;
     }
+    
+    // 尝试获取模型服务接口（可选，用于精确计算cfg）
+    model_service = loader->getService<IModelService>(ID_MODEL_SERVICE);
+    if (model_service) {
+        std::cout << "[CrpRobot] info: 模型服务可用，将用于精确计算cfg\n";
+    }
 
     // 重试连接逻辑
     for (int i = 0; i < retry_times; ++i) {
-        // std::cout << "[CrpRobot] info: 第" << i + 1 << "次连接机器人: " << ip << "\n";
+        std::cout << "[CrpRobot] info: 第" << i + 1 << "次连接机器人: " << ip << "\n";
         // 关键参数：disableHardware=true（禁用硬件安全开关校验）
         if (robot->connect(ip.c_str(), true)) {
             connected = true;
             // 连接成功后切换到手动模式（上电前提）
             if (switch_to_manual_mode()) {
-                // std::cout << "[CrpRobot] info: 连接机器人并切换到手动模式\n";
+                std::cout << "[CrpRobot] info: 连接机器人并切换到手动模式\n";
                 return true;
             } else {
                 std::cerr << "[CrpRobot] error: 连接成功但切换手动模式失败，重试连接...\n";
@@ -107,7 +118,7 @@ bool CrpRobot::servo_power_on(int retry_times) {
 
     // 重试上电：一旦检测到上电成功就立即返回 true（不再重复尝试）
     for (int i = 0; i < retry_times; ++i) {
-        // std::cout << "[CrpRobot] info: 第" << i + 1 << "次尝试上电\n";
+        std::cout << "[CrpRobot] info: 第" << i + 1 << "次尝试上电\n";
         if (robot->servoPowerOn()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
             if (robot->isServoOn()) {
@@ -190,7 +201,7 @@ bool CrpRobot::movej_absolute(const std::map<std::string, double>& target_joints
         std::cerr << "[CrpRobot] error: 运动超时\n";
         return false;
     }
-
+    
     return true;
 }
 
@@ -207,6 +218,12 @@ bool CrpRobot::movel_absolute(const std::vector<double>& target_pose,
     target.Rx = target_pose[3];
     target.Ry = target_pose[4];
     target.Rz = target_pose[5];
+    
+    // 计算并设置cfg
+    if (!calculate_cfg_for_movel(target, target)) {
+        std::cerr << "[CrpRobot] error: 计算cfg失败\n";
+        return false;
+    }
 
     // 执行直线运动
     if (!robot->moveL(target)) {
@@ -219,7 +236,6 @@ bool CrpRobot::movel_absolute(const std::vector<double>& target_pose,
         std::cerr << "[CrpRobot] error: 运动超时\n";
         return false;
     }
-
     return true;
 }
 
@@ -246,5 +262,73 @@ bool CrpRobot::wait_for_movement(int timeout_ms) {
 bool CrpRobot::stop_move() {
     if (!connected) return false;
     return robot->stopMove();
+}
+
+bool CrpRobot::set_speed_ratio(int ratio) {
+    if (!connected) {
+        std::cerr << "[CrpRobot] error: 未连接机器人，无法设置速度\n";
+        return false;
+    }
+    
+    // 限制速度范围在0-100
+    if (ratio < 0) ratio = 0;
+    if (ratio > 100) ratio = 100;
+    
+    if (!robot->setSpeedRatio(ratio)) {
+        std::cerr << "[CrpRobot] error: 设置速度倍率失败\n";
+        return false;
+    }
+    
+    std::cout << "[CrpRobot] info: 设置速度倍率为 " << ratio << "%\n";
+    return true;
+}
+
+int CrpRobot::get_speed_ratio() const {
+    if (!connected) return -1;
+    return robot->getSpeedRatio();
+}
+
+bool CrpRobot::calculate_cfg_for_movel(const SRobotPosition& target_pose, SRobotPosition& target_with_cfg) {
+    // 获取当前关节位置（包含cfg信息）
+    SJointPosition current_joints;
+    if (!robot->getCurrentJoint(current_joints)) {
+        std::cerr << "[CrpRobot] error: 无法获取当前关节位置\n";
+        return false;
+    }
+    
+    // 复制目标位姿
+    target_with_cfg = target_pose;
+    
+    // 方案1：如果模型服务可用，尝试使用IKine_nearest_line精确计算cfg
+    // 注意：这需要DH参数和模型类型，通常需要从机器人配置中获取
+    // 由于DH参数不易获取，这里先使用方案2，后续可以扩展支持
+    
+    // 方案2：使用当前关节位置的cfg作为参考（MoveL通常保持相同的配置）
+    // 根据RobotTypes.h的注释：
+    // - cfg[0] = cf1 (关节1象限)
+    // - cfg[1] = cf4 (关节4象限)  
+    // - cfg[2] = cf6 (关节6象限)
+    // - cfg[3] = cfx (机器人形态，8种配置之一，负值表示无效)
+    
+    // 检查当前cfg是否有效（cfx为负值表示无效）
+    bool cfg_valid = (current_joints.cfg[3] >= 0);
+    
+    if (cfg_valid) {
+        // 当前cfg有效，直接使用（MoveL通常保持相同的配置）
+        // 这样可以确保机器人保持当前的姿态配置，避免不必要的姿态翻转
+        for (int i = 0; i < 4; ++i) {
+            target_with_cfg.cfg[i] = current_joints.cfg[i];
+        }
+    } else {
+        // 当前cfg无效，设置为0让系统自动计算
+        // 根据RobotTypes.h注释，cfg[3]为负时表示当前cfg无效，为计算点
+        // 将cfg全部设为0，系统会根据目标位姿和当前关节位置自动计算最合适的cfg
+        for (int i = 0; i < 4; ++i) {
+            target_with_cfg.cfg[i] = 0;
+        }
+        std::cout << "[CrpRobot] info: 当前cfg无效，将使用系统自动计算的cfg\n";
+    }
+    
+    return true;
 }
 }  // namespace Crp

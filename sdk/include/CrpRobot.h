@@ -5,6 +5,7 @@
 #include <vector>
 #include "CSDKLoader.h"
 #include "IRobotService.h"
+#include "IModelService.h"
 #include "RobotTypes.h"
 
 namespace Crp {
@@ -56,10 +57,17 @@ public:
     
     // 停止运动
     bool stop_move();
+    
+    // 设置运行速度（速度倍率：0-100）
+    bool set_speed_ratio(int ratio);
+    
+    // 获取当前运行速度（速度倍率：0-100，-1表示失败）
+    int get_speed_ratio() const;
 
 private:
     CSDKLoader* loader;               // SDK加载器
     IRobotService* robot;             // 机器人服务接口
+    IModelService* model_service;     // 模型服务接口（可选）
     bool connected;                   // 连接状态
     bool servo_on;                    // 伺服使能状态
     
@@ -68,5 +76,8 @@ private:
     
     // 等待运动完成
     bool wait_for_movement(int timeout_ms);
+    
+    // 计算目标位置的cfg（用于MoveL）
+    bool calculate_cfg_for_movel(const SRobotPosition& target_pose, SRobotPosition& target_with_cfg);
 };
 }  // namespace Crp

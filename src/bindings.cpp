@@ -25,56 +25,63 @@ PYBIND11_MODULE(CrpRobotPy, m) {
     // 导出封装类
     py::class_<Crp::CrpRobot>(m, "CrpRobotPy")
 
-        .def(py::init<>(), 
+          .def(py::init<>(), 
              "Initialize a CrpRobotPy object")
 
-        .def("connect", &Crp::CrpRobot::connect, 
+          .def("connect", &Crp::CrpRobot::connect, 
              py::arg("ip") = "192.168.0.100", 
              py::arg("retry_times") = 3,
              "Connect to the robot with the given IP address and retry times (default: 3)")
              
-        .def("disconnect", &Crp::CrpRobot::disconnect, 
+          .def("disconnect", &Crp::CrpRobot::disconnect, 
              "Disconnect from the robot")
 
-        .def("is_connected", &Crp::CrpRobot::is_connected, 
+          .def("is_connected", &Crp::CrpRobot::is_connected, 
              "Check if the robot is connected")
 
-        .def("servo_power_on", &Crp::CrpRobot::servo_power_on, 
+          .def("servo_power_on", &Crp::CrpRobot::servo_power_on, 
              py::arg("retry_times") = 3,
              "Power on the servo and retry times (default: 3)")
              
-        .def("servo_power_off", &Crp::CrpRobot::servo_power_off, 
+          .def("servo_power_off", &Crp::CrpRobot::servo_power_off, 
              "Power off the servo")
 
-        .def("is_servo_on", &Crp::CrpRobot::is_servo_on,
+          .def("is_servo_on", &Crp::CrpRobot::is_servo_on,
              "Check if the servo is powered on")
 
-        .def("switch_work_mode", &Crp::CrpRobot::switch_work_mode, 
+          .def("switch_work_mode", &Crp::CrpRobot::switch_work_mode, 
              py::arg("mode"), 
              "Switch the robot's work mode")
 
-        .def("get_work_mode", &Crp::CrpRobot::get_work_mode, 
+          .def("get_work_mode", &Crp::CrpRobot::get_work_mode, 
              "Get the current work mode of the robot")
 
-        .def("is_manual_mode", &Crp::CrpRobot::is_manual_mode, 
+          .def("is_manual_mode", &Crp::CrpRobot::is_manual_mode, 
              "Check if the robot is in manual mode")
 
-        .def("movej_absolute", &Crp::CrpRobot::movej_absolute,
-             py::arg("target_joints"),  // 字典：{"j1": 角度, ..., "j6": 角度}
-             py::arg("wait_ms") = 6000, // 等待运动完成的时间（ms）
+          .def("movej_absolute", &Crp::CrpRobot::movej_absolute,
+             py::arg("target_joints"),
+             py::arg("wait_ms") = 6000,
              "绝对关节控制（MoveJ）")
 
-        .def("movel_absolute", &Crp::CrpRobot::movel_absolute,
-             py::arg("target_pose"),   // 列表：[X, Y, Z, Rx, Ry, Rz]（单位：mm/度）
+          .def("movel_absolute", &Crp::CrpRobot::movel_absolute,
+             py::arg("target_pose"),
              py::arg("wait_ms") = 6000,
              "绝对末端位置控制（MoveL）")
 
-        .def("read_joints", &Crp::CrpRobot::read_joints, 
+          .def("read_joints", &Crp::CrpRobot::read_joints, 
              "读取当前关节角度（返回字典：{\"j1\": 角度, ..., \"j6\": 角度}）")
 
-        .def("read_end_pose", &Crp::CrpRobot::read_end_pose, 
+          .def("read_end_pose", &Crp::CrpRobot::read_end_pose, 
              "读取当前末端位姿（返回列表：[X, Y, Z, Rx, Ry, Rz]）")
 
-        .def("stop_move", &Crp::CrpRobot::stop_move, "紧急停止所有运动");
+          .def("set_speed_ratio", &Crp::CrpRobot::set_speed_ratio,
+             py::arg("ratio"),
+             "设置运行速度")
+
+          .def("get_speed_ratio", &Crp::CrpRobot::get_speed_ratio,
+             "获取运行速度")
+
+          .def("stop_move", &Crp::CrpRobot::stop_move, "紧急停止所有运动");
         
 }
