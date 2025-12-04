@@ -59,12 +59,12 @@ PYBIND11_MODULE(CrpRobotPy, m) {
           .def("is_manual_mode", &Crp::CrpRobot::is_manual_mode, 
              "Check if the robot is in manual mode")
 
-          .def("movej_absolute", &Crp::CrpRobot::movej_absolute,
+          .def("movej", &Crp::CrpRobot::movej,
              py::arg("target_joints"),
              py::arg("wait_ms") = 6000,
              "绝对关节控制（MoveJ）")
 
-          .def("movel_absolute", &Crp::CrpRobot::movel_absolute,
+          .def("movel_user", &Crp::CrpRobot::movel_user,
              py::arg("target_pose"),
              py::arg("wait_ms") = 6000,
              "绝对末端位置控制（MoveL）")
@@ -72,8 +72,11 @@ PYBIND11_MODULE(CrpRobotPy, m) {
           .def("read_joints", &Crp::CrpRobot::read_joints, 
              "读取当前关节角度（返回字典：{\"j1\": 角度, ..., \"j6\": 角度}）")
 
-          .def("read_end_pose", &Crp::CrpRobot::read_end_pose, 
-             "读取当前末端位姿（返回列表：[X, Y, Z, Rx, Ry, Rz]）")
+          .def("read_end_pose_world", &Crp::CrpRobot::read_end_pose_world, 
+             "读取世界坐标系末端位姿（返回列表：[X, Y, Z, Rx, Ry, Rz]）")
+
+          .def("read_end_pose_user", &Crp::CrpRobot::read_end_pose_user, 
+             "读取用户坐标系末端位姿（返回列表：[X, Y, Z, Rx, Ry, Rz]）")
 
           .def("set_speed_ratio", &Crp::CrpRobot::set_speed_ratio,
              py::arg("ratio"),

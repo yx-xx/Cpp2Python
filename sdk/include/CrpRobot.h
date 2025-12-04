@@ -42,18 +42,21 @@ public:
     bool is_manual_mode() const { return get_work_mode() == RM_Manual; }
     
     // 绝对关节运动（MoveJ）
-    bool movej_absolute(const std::map<std::string, double>& target_joints, 
+    bool movej(const std::map<std::string, double>& target_joints, 
                        int wait_ms = 6000);
     
-    // 绝对直线运动（MoveL）
-    bool movel_absolute(const std::vector<double>& target_pose, 
+    // 直线运动（MoveL）
+    bool movel_user(const std::vector<double>& target_pose, 
                        int wait_ms = 6000);
     
     // 读取当前关节角度
     std::map<std::string, double> read_joints();
     
     // 读取末端位姿
-    std::vector<double> read_end_pose();
+    std::vector<double> read_end_pose_world();
+    
+    // 读取用户坐标系下的末端位姿
+    std::vector<double> read_end_pose_user();
     
     // 停止运动
     bool stop_move();
