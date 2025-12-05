@@ -238,11 +238,11 @@ bool CrpRobot::movel_user(const std::vector<double>& target_pose,
         return false;
     }
 
-    // 等待运动完成
-    if (!wait_for_movement(wait_ms)) {
-        std::cerr << "[CrpRobot] error: 运动超时\n";
-        return false;
-    }
+    // // 等待运动完成
+    // if (!wait_for_movement(wait_ms)) {
+    //     std::cerr << "[CrpRobot] error: 运动超时\n";
+    //     return false;
+    // }
     return true;
 }
 
