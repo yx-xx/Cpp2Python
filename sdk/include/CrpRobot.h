@@ -42,12 +42,10 @@ public:
     bool is_manual_mode() const { return get_work_mode() == RM_Manual; }
     
     // 绝对关节运动（MoveJ）
-    bool movej(const std::map<std::string, double>& target_joints, 
-                       int wait_ms = 6000);
+    bool movej(const std::map<std::string, double>& target_joints);
     
     // 直线运动（MoveL）
-    bool movel_user(const std::vector<double>& target_pose, 
-                       int wait_ms = 6000);
+    bool movel_user(const std::vector<double>& target_pose);
     
     // 读取当前关节角度
     std::map<std::string, double> read_joints();

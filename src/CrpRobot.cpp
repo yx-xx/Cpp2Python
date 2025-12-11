@@ -183,8 +183,7 @@ std::vector<double> CrpRobot::read_end_pose_user() {
     return pose;
 }
 
-bool CrpRobot::movej(const std::map<std::string, double>& target_joints, 
-                                 int wait_ms) {
+bool CrpRobot::movej(const std::map<std::string, double>& target_joints) {
     if (!connected || !servo_on || !is_manual_mode()) return false;
 
     // 构造目标关节数据
@@ -203,17 +202,10 @@ bool CrpRobot::movej(const std::map<std::string, double>& target_joints,
         return false;
     }
 
-    // 等待运动完成
-    if (!wait_for_movement(wait_ms)) {
-        std::cerr << "[CrpRobot] error: 运动超时\n";
-        return false;
-    }
-
     return true;
 }
 
-bool CrpRobot::movel_user(const std::vector<double>& target_pose, 
-                                 int wait_ms) {
+bool CrpRobot::movel_user(const std::vector<double>& target_pose) {
     if (!connected || !servo_on || !is_manual_mode() || target_pose.size() != 6) return false;
 
     // 构造目标位姿数据
@@ -237,12 +229,6 @@ bool CrpRobot::movel_user(const std::vector<double>& target_pose,
         std::cerr << "[CrpRobot] error: 发送MoveL指令失败\n";
         return false;
     }
-
-    // // 等待运动完成
-    // if (!wait_for_movement(wait_ms)) {
-    //     std::cerr << "[CrpRobot] error: 运动超时\n";
-    //     return false;
-    // }
     return true;
 }
 

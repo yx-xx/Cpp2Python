@@ -61,12 +61,10 @@ PYBIND11_MODULE(CrpRobotPy, m) {
 
           .def("movej", &Crp::CrpRobot::movej,
              py::arg("target_joints"),
-             py::arg("wait_ms") = 6000,
              "绝对关节控制（MoveJ）")
 
           .def("movel_user", &Crp::CrpRobot::movel_user,
              py::arg("target_pose"),
-             py::arg("wait_ms") = 6000,
              "绝对末端位置控制（MoveL）")
 
           .def("read_joints", &Crp::CrpRobot::read_joints, 
