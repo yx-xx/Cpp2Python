@@ -14,16 +14,6 @@ public:
     CrpRobot();
     ~CrpRobot();
 
-    // 位姿类型
-    struct PointPose {
-        double x;
-        double y;
-        double z;
-        double Rx;
-        double Ry;
-        double Rz;
-    };
-
     // 连接机器人（返回是否成功）
     bool connect(const std::string& ip = "192.168.0.100", int retry_times = 3);
     
@@ -72,7 +62,8 @@ public:
      * points: 每个点为 PointPose (x,y,z,Rx,Ry,Rz)
      * 返回 true 表示写入成功。
      */
-    bool set_GPs(size_t start_index, const std::vector<PointPose>& points);
+    // points: 每个点为长度为6的 std::vector<double> 表示位姿 {x,y,z,Rx,Ry,Rz}
+    bool set_GPs(size_t start_index, const std::vector<std::vector<double>>& points);
     
     // 整形全局变量 (GI) 读写接口
     bool set_GI(size_t index, int32_t value);
@@ -99,7 +90,7 @@ private:
     // 等待运动完成
     bool wait_for_movement(int timeout_ms);
     
-    // 计算目标位置的cfg（用于MoveL）
-    bool calculate_cfg_for_movel(const SRobotPosition& target_pose, SRobotPosition& target_with_cfg);
+    // 计算目标位置的cfg
+    bool calculate_cfg(const SRobotPosition& target_pose, SRobotPosition& target_with_cfg);
 };
 }  // namespace Crp

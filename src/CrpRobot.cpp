@@ -219,7 +219,7 @@ bool CrpRobot::movel_user(const std::vector<double>& target_pose) {
     target.Rz = target_pose[5];
     
     // 计算并设置cfg
-    if (!calculate_cfg_for_movel(target, target)) {
+    if (!calculate_cfg(target, target)) {
         std::cerr << "[CrpRobot] error: 计算cfg失败\n";
         return false;
     }
@@ -281,8 +281,8 @@ int CrpRobot::get_speed_ratio() const {
     return robot->getSpeedRatio();
 }
 
-// 批量写入 GP（通过公开的 PointPose 结构传入）
-bool CrpRobot::set_GPs(size_t start_index, const std::vector<PointPose>& points) {
+// 批量写入 GP
+bool CrpRobot::set_GPs(size_t start_index, const std::vector<std::vector<double>>& points) {
     if (!connected || !robot) {
         std::cerr << "[CrpRobot] error: 未连接机器人，无法写入GP\n";
         return false;
@@ -291,25 +291,28 @@ bool CrpRobot::set_GPs(size_t start_index, const std::vector<PointPose>& points)
     if (points.empty()) {
         return true;
     }
-
+ 
     // 准备 SDK 的 SRobotPosition 数组
     std::vector<SRobotPosition> arr;
     arr.resize(points.size());
 
     for (size_t i = 0; i < points.size(); ++i) {
-        const PointPose& p = points[i];
+        const std::vector<double>& p = points[i];
+        if (p.size() != 6) {
+            std::cerr << "[CrpRobot] error: point size must be 6 (x,y,z,Rx,Ry,Rz), index=" << i << "\n";
+            return false;
+        }
         SRobotPosition& s = arr[i];
         // 清零所有字段以防未初始化值
         std::memset(&s, 0, sizeof(SRobotPosition));
-        s.x = p.x;
-        s.y = p.y;
-        s.z = p.z;
-        s.Rx = p.Rx;
-        s.Ry = p.Ry;
-        s.Rz = p.Rz;
-        // extJoint 已经被 memset 为 0
-        // cfg 写入时通常无意义，但设为0以确保可用
-        for (int k = 0; k < 4; ++k) s.cfg[k] = 0;
+        s.x = p[0];
+        s.y = p[1];
+        s.z = p[2];
+        s.Rx = p[3];
+        s.Ry = p[4];
+        s.Rz = p[5];
+
+        calculate_cfg(s,s);
     }
 
     // 调用 SDK 批量写入 GP
@@ -361,7 +364,7 @@ int32_t CrpRobot::get_GI(size_t index) {
     return value;
 }
 
-bool CrpRobot::calculate_cfg_for_movel(const SRobotPosition& target_pose, SRobotPosition& target_with_cfg) {
+bool CrpRobot::calculate_cfg(const SRobotPosition& target_pose, SRobotPosition& target_with_cfg) {
     // 获取当前关节位置（包含cfg信息）
     SJointPosition current_joints;
     if (!robot->getCurrentJoint(current_joints)) {

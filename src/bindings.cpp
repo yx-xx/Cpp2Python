@@ -7,7 +7,7 @@ namespace py = pybind11;
 PYBIND11_MODULE(CrpRobotPy, m) {
    m.doc() = "Crp Python API";
 
-    // 导出枚举
+   // 导出枚举
    py::enum_<Crp::ERobotMode>(m, "RobotMode")
       .value("Manual", Crp::RM_Manual)    // 手动模式（MoveL必需）
       .value("Auto", Crp::RM_Playing)     // 自动模式
@@ -22,17 +22,8 @@ PYBIND11_MODULE(CrpRobotPy, m) {
       .value("Tool", Crp::CS_Tool)        // 工具坐标系
       .export_values();
 
-   // 导出 PointPose 结构用于批量写入 GP
-   py::class_<Crp::CrpRobot::PointPose>(m, "PointPose")
-      .def(py::init<>())
-      .def_readwrite("x", &Crp::CrpRobot::PointPose::x)
-      .def_readwrite("y", &Crp::CrpRobot::PointPose::y)
-      .def_readwrite("z", &Crp::CrpRobot::PointPose::z)
-      .def_readwrite("Rx", &Crp::CrpRobot::PointPose::Rx)
-      .def_readwrite("Ry", &Crp::CrpRobot::PointPose::Ry)
-      .def_readwrite("Rz", &Crp::CrpRobot::PointPose::Rz);
 
-    // 导出封装类
+   // 导出封装类
    py::class_<Crp::CrpRobot>(m, "CrpRobotPy")
 
       .def(py::init<>(), 
