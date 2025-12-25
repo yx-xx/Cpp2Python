@@ -14,6 +14,16 @@ public:
     CrpRobot();
     ~CrpRobot();
 
+    // 位姿类型
+    struct PointPose {
+        double x;
+        double y;
+        double z;
+        double Rx;
+        double Ry;
+        double Rz;
+    };
+
     // 连接机器人（返回是否成功）
     bool connect(const std::string& ip = "192.168.0.100", int retry_times = 3);
     
@@ -55,13 +65,24 @@ public:
     
     // 读取用户坐标系下的末端位姿
     std::vector<double> read_end_pose_user();
+
+    /**
+     * 批量写入 GP（位置变量）。
+     * start_index: GP 起始索引（写入从此索引开始覆盖）
+     * points: 每个点为 PointPose (x,y,z,Rx,Ry,Rz)
+     * 返回 true 表示写入成功。
+     */
+    bool set_GPs(size_t start_index, const std::vector<PointPose>& points);
+    
+    // 整形全局变量 (GI) 读写接口
+    bool set_GI(size_t index, int32_t value);
+    int32_t get_GI(size_t index);
     
     // 停止运动
     bool stop_move();
     
     // 设置运行速度（速度倍率：0-100）
     bool set_speed_ratio(int ratio);
-    
     // 获取当前运行速度（速度倍率：0-100，-1表示失败）
     int get_speed_ratio() const;
 

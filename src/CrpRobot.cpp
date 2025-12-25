@@ -281,6 +281,86 @@ int CrpRobot::get_speed_ratio() const {
     return robot->getSpeedRatio();
 }
 
+// 批量写入 GP（通过公开的 PointPose 结构传入）
+bool CrpRobot::set_GPs(size_t start_index, const std::vector<PointPose>& points) {
+    if (!connected || !robot) {
+        std::cerr << "[CrpRobot] error: 未连接机器人，无法写入GP\n";
+        return false;
+    }
+
+    if (points.empty()) {
+        return true;
+    }
+
+    // 准备 SDK 的 SRobotPosition 数组
+    std::vector<SRobotPosition> arr;
+    arr.resize(points.size());
+
+    for (size_t i = 0; i < points.size(); ++i) {
+        const PointPose& p = points[i];
+        SRobotPosition& s = arr[i];
+        // 清零所有字段以防未初始化值
+        std::memset(&s, 0, sizeof(SRobotPosition));
+        s.x = p.x;
+        s.y = p.y;
+        s.z = p.z;
+        s.Rx = p.Rx;
+        s.Ry = p.Ry;
+        s.Rz = p.Rz;
+        // extJoint 已经被 memset 为 0
+        // cfg 写入时通常无意义，但设为0以确保可用
+        for (int k = 0; k < 4; ++k) s.cfg[k] = 0;
+    }
+
+    // 调用 SDK 批量写入 GP
+    bool ok = robot->setGP(start_index, arr.data(), arr.size());
+    if (!ok) {
+        std::cerr << "[CrpRobot] error: 写入GP失败，start_index=" << start_index << " count=" << arr.size() << "\n";
+        return false;
+    }
+
+    std::cout << "[CrpRobot] info: 成功写入 " << arr.size() << " 个 GP，从索引 " << start_index << " 开始\n";
+    return true;
+}
+
+// 整形全局变量 (GI) 读写
+bool CrpRobot::set_GI(size_t index, int32_t value) {
+    if (!connected || !robot) {
+        std::cerr << "[CrpRobot] error: not connected, cannot set GI\n";
+        return false;
+    }
+    if (!robot->setGI(index, value)) {
+        std::cerr << "[CrpRobot] error: set_GI failed index=" << index << " value=" << value << "\n";
+        return false;
+    }
+    return true;
+}
+
+// bool CrpRobot::get_GI(size_t index, int32_t& value) {
+//     if (!connected || !robot) {
+//         std::cerr << "[CrpRobot] error: not connected, cannot get GI\n";
+//         return false;
+//     }
+//     if (!robot->getGI(index, value)) {
+//         std::cerr << "[CrpRobot] error: get_GI failed index=" << index << "\n";
+//         return false;
+//     }
+//     return true;
+// }
+
+int32_t CrpRobot::get_GI(size_t index) {
+    int32_t value = 0;
+    if (!connected || !robot) {
+        std::cerr << "[CrpRobot] error: not connected, cannot get GI\n";
+        return -1;
+    }
+    if (!robot->getGI(index, value)) {
+        std::cerr << "[CrpRobot] error: get_GI failed index=" << index << "\n";
+        return -1;
+    }
+    return value;
+}
+
 bool CrpRobot::calculate_cfg_for_movel(const SRobotPosition& target_pose, SRobotPosition& target_with_cfg) {
     // 获取当前关节位置（包含cfg信息）
     SJointPosition current_joints;
@@ -291,17 +371,6 @@ bool CrpRobot::calculate_cfg_for_movel(const SRobotPosition& target_pose, SRobot
     
     // 复制目标位姿
     target_with_cfg = target_pose;
-    
-    // 方案1：如果模型服务可用，尝试使用IKine_nearest_line精确计算cfg
-    // 注意：这需要DH参数和模型类型，通常需要从机器人配置中获取
-    // 由于DH参数不易获取，这里先使用方案2，后续可以扩展支持
-    
-    // 方案2：使用当前关节位置的cfg作为参考（MoveL通常保持相同的配置）
-    // 根据RobotTypes.h的注释：
-    // - cfg[0] = cf1 (关节1象限)
-    // - cfg[1] = cf4 (关节4象限)  
-    // - cfg[2] = cf6 (关节6象限)
-    // - cfg[3] = cfx (机器人形态，8种配置之一，负值表示无效)
     
     // 检查当前cfg是否有效（cfx为负值表示无效）
     bool cfg_valid = (current_joints.cfg[3] >= 0);

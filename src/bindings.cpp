@@ -5,84 +5,108 @@
 namespace py = pybind11;
 
 PYBIND11_MODULE(CrpRobotPy, m) {
-    m.doc() = "Crp Python API";
+   m.doc() = "Crp Python API";
 
     // 导出枚举
-    py::enum_<Crp::ERobotMode>(m, "RobotMode")
-        .value("Manual", Crp::RM_Manual)    // 手动模式（MoveL必需）
-        .value("Auto", Crp::RM_Playing)     // 自动模式
-        .value("Remote", Crp::RM_Remote)    // 远程模式
-        .export_values();
+   py::enum_<Crp::ERobotMode>(m, "RobotMode")
+      .value("Manual", Crp::RM_Manual)    // 手动模式（MoveL必需）
+      .value("Auto", Crp::RM_Playing)     // 自动模式
+      .value("Remote", Crp::RM_Remote)    // 远程模式
+      .export_values();
 
-    py::enum_<Crp::ECoordinateSystem>(m, "CoordinateSystem")
-        .value("Joint", Crp::CS_Joint)      // 关节坐标系
-        .value("World", Crp::CS_World)      // 世界坐标系（默认）
-        .value("Base", Crp::CS_Base)        // 基坐标系
-        .value("User", Crp::CS_User)        // 用户坐标系
-        .value("Tool", Crp::CS_Tool)        // 工具坐标系
-        .export_values();
+   py::enum_<Crp::ECoordinateSystem>(m, "CoordinateSystem")
+      .value("Joint", Crp::CS_Joint)      // 关节坐标系
+      .value("World", Crp::CS_World)      // 世界坐标系（默认）
+      .value("Base", Crp::CS_Base)        // 基坐标系
+      .value("User", Crp::CS_User)        // 用户坐标系
+      .value("Tool", Crp::CS_Tool)        // 工具坐标系
+      .export_values();
+
+   // 导出 PointPose 结构用于批量写入 GP
+   py::class_<Crp::CrpRobot::PointPose>(m, "PointPose")
+      .def(py::init<>())
+      .def_readwrite("x", &Crp::CrpRobot::PointPose::x)
+      .def_readwrite("y", &Crp::CrpRobot::PointPose::y)
+      .def_readwrite("z", &Crp::CrpRobot::PointPose::z)
+      .def_readwrite("Rx", &Crp::CrpRobot::PointPose::Rx)
+      .def_readwrite("Ry", &Crp::CrpRobot::PointPose::Ry)
+      .def_readwrite("Rz", &Crp::CrpRobot::PointPose::Rz);
 
     // 导出封装类
-    py::class_<Crp::CrpRobot>(m, "CrpRobotPy")
+   py::class_<Crp::CrpRobot>(m, "CrpRobotPy")
 
-          .def(py::init<>(), 
-             "Initialize a CrpRobotPy object")
+      .def(py::init<>(), 
+         "Initialize a CrpRobotPy object")
 
-          .def("connect", &Crp::CrpRobot::connect, 
-             py::arg("ip") = "192.168.0.100", 
-             py::arg("retry_times") = 3,
-             "Connect to the robot with the given IP address and retry times (default: 3)")
+      .def("connect", &Crp::CrpRobot::connect, 
+         py::arg("ip") = "192.168.0.100", 
+         py::arg("retry_times") = 3,
+         "Connect to the robot with the given IP address and retry times (default: 3)")
              
-          .def("disconnect", &Crp::CrpRobot::disconnect, 
-             "Disconnect from the robot")
+      .def("disconnect", &Crp::CrpRobot::disconnect, 
+         "Disconnect from the robot")
 
-          .def("is_connected", &Crp::CrpRobot::is_connected, 
-             "Check if the robot is connected")
+      .def("is_connected", &Crp::CrpRobot::is_connected, 
+         "Check if the robot is connected")
 
-          .def("servo_power_on", &Crp::CrpRobot::servo_power_on, 
-             py::arg("retry_times") = 3,
-             "Power on the servo and retry times (default: 3)")
-             
-          .def("servo_power_off", &Crp::CrpRobot::servo_power_off, 
-             "Power off the servo")
+      .def("servo_power_on", &Crp::CrpRobot::servo_power_on, 
+         py::arg("retry_times") = 3,
+         "Power on the servo and retry times (default: 3)")
+            
+      .def("servo_power_off", &Crp::CrpRobot::servo_power_off, 
+         "Power off the servo")
 
-          .def("is_servo_on", &Crp::CrpRobot::is_servo_on,
-             "Check if the servo is powered on")
+      .def("is_servo_on", &Crp::CrpRobot::is_servo_on,
+         "Check if the servo is powered on")
 
-          .def("switch_work_mode", &Crp::CrpRobot::switch_work_mode, 
-             py::arg("mode"), 
-             "Switch the robot's work mode")
+      .def("switch_work_mode", &Crp::CrpRobot::switch_work_mode, 
+         py::arg("mode"), 
+         "Switch the robot's work mode")
 
-          .def("get_work_mode", &Crp::CrpRobot::get_work_mode, 
-             "Get the current work mode of the robot")
+      .def("get_work_mode", &Crp::CrpRobot::get_work_mode, 
+         "Get the current work mode of the robot")
 
-          .def("is_manual_mode", &Crp::CrpRobot::is_manual_mode, 
-             "Check if the robot is in manual mode")
+      .def("is_manual_mode", &Crp::CrpRobot::is_manual_mode, 
+         "Check if the robot is in manual mode")
 
-          .def("movej", &Crp::CrpRobot::movej,
-             py::arg("target_joints"),
-             "绝对关节控制（MoveJ）")
+      .def("movej", &Crp::CrpRobot::movej,
+         py::arg("target_joints"),
+         "绝对关节控制（MoveJ）")
 
-          .def("movel_user", &Crp::CrpRobot::movel_user,
-             py::arg("target_pose"),
-             "绝对末端位置控制（MoveL）")
+      .def("movel_user", &Crp::CrpRobot::movel_user,
+         py::arg("target_pose"),
+         "绝对末端位置控制（MoveL）")
 
-          .def("read_joints", &Crp::CrpRobot::read_joints, 
-             "读取当前关节角度（返回字典：{\"j1\": 角度, ..., \"j6\": 角度}）")
+      .def("read_joints", &Crp::CrpRobot::read_joints, 
+         "读取当前关节角度（返回字典：{\"j1\": 角度, ..., \"j6\": 角度}）")
 
-          .def("read_end_pose_world", &Crp::CrpRobot::read_end_pose_world, 
-             "读取世界坐标系末端位姿（返回列表：[X, Y, Z, Rx, Ry, Rz]）")
+      .def("read_end_pose_world", &Crp::CrpRobot::read_end_pose_world, 
+         "读取世界坐标系末端位姿（返回列表：[X, Y, Z, Rx, Ry, Rz]）")
 
-          .def("read_end_pose_user", &Crp::CrpRobot::read_end_pose_user, 
-             "读取用户坐标系末端位姿（返回列表：[X, Y, Z, Rx, Ry, Rz]）")
+      .def("read_end_pose_user", &Crp::CrpRobot::read_end_pose_user, 
+         "读取用户坐标系末端位姿（返回列表：[X, Y, Z, Rx, Ry, Rz]）")
 
-          .def("set_speed_ratio", &Crp::CrpRobot::set_speed_ratio,
-             py::arg("ratio"),
-             "设置运行速度")
+      .def("set_speed_ratio", &Crp::CrpRobot::set_speed_ratio,
+         py::arg("ratio"),
+         "设置运行速度")
 
-          .def("get_speed_ratio", &Crp::CrpRobot::get_speed_ratio,
-             "获取运行速度")
+      .def("set_GPs", &Crp::CrpRobot::set_GPs,
+         py::arg("start_index") = 0,
+         py::arg("points"),
+         "设置运动轨迹点")
 
-          .def("stop_move", &Crp::CrpRobot::stop_move, "紧急停止所有运动");
-        
+      .def("set_GI", &Crp::CrpRobot::set_GI,
+         py::arg("index"),
+         py::arg("value"),
+         "Set a single GI variable by index")
+
+      .def("get_GI", &Crp::CrpRobot::get_GI,
+         py::arg("index"),
+         "Get a single GI variable; returns int value or throws on error")
+
+      .def("get_speed_ratio", &Crp::CrpRobot::get_speed_ratio,
+            "获取运行速度")
+
+      .def("stop_move", &Crp::CrpRobot::stop_move, "紧急停止所有运动");
+
 }
