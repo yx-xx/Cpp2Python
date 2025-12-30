@@ -64,11 +64,14 @@ public:
      */
     // points: 每个点为长度为6的 std::vector<double> 表示位姿 {x,y,z,Rx,Ry,Rz}
     bool set_GPs(size_t start_index, const std::vector<std::vector<double>>& points);
-    
+    // 批量写入 GJ：从 start_index 开始写入 joints_list 中的每个关节数组（每个内层长度应为6）
+    bool set_GJs(size_t start_index, const std::vector<std::vector<double>>& joints_list);
     // 整形全局变量 (GI) 读写接口
     bool set_GI(size_t index, int32_t value);
     int32_t get_GI(size_t index);
     
+    
+
     // 停止运动
     bool stop_move();
     

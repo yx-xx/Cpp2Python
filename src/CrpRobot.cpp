@@ -364,6 +364,37 @@ int32_t CrpRobot::get_GI(size_t index) {
     return value;
 }
 
+
+// 批量写入 GJ
+bool CrpRobot::set_GJs(size_t start_index, const std::vector<std::vector<double>>& joints_list) {
+    if (!connected || !robot) {
+        std::cerr << "[CrpRobot] error: not connected, cannot set GJs\n";
+        return false;
+    }
+    if (joints_list.empty()) return true;
+
+    std::vector<SJointPosition> arr;
+    arr.resize(joints_list.size());
+
+    for (size_t i = 0; i < joints_list.size(); ++i) {
+        const auto& j = joints_list[i];
+        if (j.size() != 6) {
+            std::cerr << "[CrpRobot] error: each joint vector must have length 6, index=" << i << " got=" << j.size() << "\n";
+            return false;
+        }
+        SJointPosition& pos = arr[i];
+        std::memset(&pos, 0, sizeof(pos));
+        for (int k = 0; k < 6; ++k) pos.body[k] = j[k];
+    }
+
+    if (!robot->setGJ(start_index, arr.data(), arr.size())) {
+        std::cerr << "[CrpRobot] error: setGJ SDK call failed start_index=" << start_index << " count=" << arr.size() << "\n";
+        return false;
+    }
+    return true;
+}
+
+
 bool CrpRobot::calculate_cfg(const SRobotPosition& target_pose, SRobotPosition& target_with_cfg) {
     // 获取当前关节位置（包含cfg信息）
     SJointPosition current_joints;

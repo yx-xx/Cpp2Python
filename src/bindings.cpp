@@ -91,6 +91,11 @@ PYBIND11_MODULE(CrpRobotPy, m) {
          py::arg("value"),
          "Set a single GI variable by index")
 
+      .def("set_GJs", &Crp::CrpRobot::set_GJs,
+         py::arg("start_index") = 0,
+         py::arg("joints_list"),
+         "Set multiple GJ records starting at start_index; joints_list is a list of [j1,..,j6]")
+
       .def("get_GI", &Crp::CrpRobot::get_GI,
          py::arg("index"),
          "Get a single GI variable; returns int value or throws on error")
