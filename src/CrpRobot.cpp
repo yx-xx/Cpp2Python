@@ -47,6 +47,10 @@ bool CrpRobot::connect(const std::string& ip, int retry_times) {
     
     // 获取模型服务接口
     model_service = loader->getService<IModelService>(ID_MODEL_SERVICE);
+    if (!model_service) {
+        std::cerr << "[CrpRobot] error: 无法获取模型服务接口\n";
+        return false;
+    }
 
     // 重试连接逻辑
     for (int i = 0; i < retry_times; ++i) {
@@ -322,7 +326,6 @@ bool CrpRobot::set_GPs(size_t start_index, const std::vector<std::vector<double>
         return false;
     }
 
-    std::cout << "[CrpRobot] info: 成功写入 " << arr.size() << " 个 GP，从索引 " << start_index << " 开始\n";
     return true;
 }
 
