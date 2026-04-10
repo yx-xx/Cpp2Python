@@ -43,7 +43,7 @@ PYBIND11_MODULE(CrpRobotPy, m) {
       .def("servo_power_on", &Crp::CrpRobot::servo_power_on, 
          py::arg("retry_times") = 3,
          "Power on the servo and retry times (default: 3)")
-            
+      
       .def("servo_power_off", &Crp::CrpRobot::servo_power_off, 
          "Power off the servo")
 
@@ -99,6 +99,18 @@ PYBIND11_MODULE(CrpRobotPy, m) {
       .def("get_GI", &Crp::CrpRobot::get_GI,
          py::arg("index"),
          "Get a single GI variable; returns int value or throws on error")
+
+      .def("get_GOT_count", &Crp::CrpRobot::get_GOT_count,
+         "组输出 GOT 数量；失败时返回 -1")
+
+      .def("set_GOT", &Crp::CrpRobot::set_GOT,
+         py::arg("index"),
+         py::arg("value"),
+         "设置指定索引的组输出 GOT（uint32）")
+
+      .def("get_GOT", &Crp::CrpRobot::get_GOT,
+         py::arg("index"),
+         "读取指定索引的组输出 GOT；失败时返回 -1")
 
       .def("get_speed_ratio", &Crp::CrpRobot::get_speed_ratio,
             "获取运行速度")

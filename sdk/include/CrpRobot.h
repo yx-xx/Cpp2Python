@@ -6,6 +6,8 @@
 #include "CSDKLoader.h"
 #include "IRobotService.h"
 #include "IModelService.h"
+#include "IIOService.h"
+#include <cstdint>
 #include "RobotTypes.h"
 
 namespace Crp {
@@ -69,7 +71,11 @@ public:
     // 整形全局变量 (GI) 读写接口
     bool set_GI(size_t index, int32_t value);
     int32_t get_GI(size_t index);
-    
+
+    // 组输出 GOT（依赖 IIOService）
+    int32_t get_GOT_count() const;
+    bool set_GOT(size_t index, uint32_t value);
+    int64_t get_GOT(size_t index);
     
 
     // 停止运动
@@ -84,6 +90,7 @@ private:
     CSDKLoader* loader;               // SDK加载器
     IRobotService* robot;             // 机器人服务接口
     IModelService* model_service;     // 模型服务接口（可选）
+    IIOService* io_service;           // IO 服务接口（GOT 等）
     bool connected;                   // 连接状态
     bool servo_on;                    // 伺服使能状态
     

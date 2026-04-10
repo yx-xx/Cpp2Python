@@ -11,6 +11,7 @@ CrpRobot::CrpRobot()
     : loader(nullptr)
     , robot(nullptr)
     , model_service(nullptr)
+    , io_service(nullptr)
     , connected(false)
     , servo_on(false) {
     // 初始化SDK加载器（默认加载RobotService库）
@@ -49,6 +50,12 @@ bool CrpRobot::connect(const std::string& ip, int retry_times) {
     model_service = loader->getService<IModelService>(ID_MODEL_SERVICE);
     if (!model_service) {
         std::cerr << "[CrpRobot] error: 无法获取模型服务接口\n";
+        return false;
+    }
+
+    io_service = loader->getService<IIOService>(ID_IO_SERVICE);
+    if (!io_service) {
+        std::cerr << "[CrpRobot] error: 无法获取 IO 服务接口\n";
         return false;
     }
 
@@ -367,6 +374,38 @@ int32_t CrpRobot::get_GI(size_t index) {
     return value;
 }
 
+int32_t CrpRobot::get_GOT_count() const {
+    if (!connected || !io_service) {
+        std::cerr << "[CrpRobot] error: not connected, cannot get GOT count\n";
+        return -1;
+    }
+    return io_service->getGOTCount();
+}
+
+bool CrpRobot::set_GOT(size_t index, uint32_t value) {
+    if (!connected || !io_service) {
+        std::cerr << "[CrpRobot] error: not connected, cannot set GOT\n";
+        return false;
+    }
+    if (!io_service->setGOT(index, value)) {
+        std::cerr << "[CrpRobot] error: set_GOT failed index=" << index << " value=" << value << "\n";
+        return false;
+    }
+    return true;
+}
+
+int64_t CrpRobot::get_GOT(size_t index) {
+    if (!connected || !io_service) {
+        std::cerr << "[CrpRobot] error: not connected, cannot get GOT\n";
+        return -1;
+    }
+    uint32_t value = 0;
+    if (!io_service->getGOT(index, value)) {
+        std::cerr << "[CrpRobot] error: get_GOT failed index=" << index << "\n";
+        return -1;
+    }
+    return static_cast<int64_t>(value);
+}
 
 // 批量写入 GJ
 bool CrpRobot::set_GJs(size_t start_index, const std::vector<std::vector<double>>& joints_list) {
