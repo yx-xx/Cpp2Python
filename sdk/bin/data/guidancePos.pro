@@ -1,0 +1,15 @@
+[METADATA]
+ORIGIN:0
+TYPE:0
+INST_VERSION:0.0.0
+ROBOT_ID:0
+BASEFRAME_ID:-1
+POSITIONERS_ID:
+[INSTRUCTION]
+GuidancePosInit
+// 到此开始消费位置数据
+GuidancePosRun
+[LP]
+[LJ]
+[LI]
+[LR]
