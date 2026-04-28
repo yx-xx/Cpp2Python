@@ -1,5 +1,6 @@
 #include "CrpRobot.h"
 #include <chrono>
+#include <random>
 #include <thread>
 #include <stdexcept>
 #include <cstring> // for memset
@@ -78,6 +79,55 @@ bool CrpRobot::connect(const std::string& ip, int retry_times) {
     std::cerr << "[CrpRobot] error: 连接机器人失败（IP: " << ip << "）\n";
     return false;
 }
+
+
+
+
+
+
+
+
+void CrpRobot::Init_crp() {
+    
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> cadis(0, 100);
+    int CZ = cadis(gen);
+
+    if (CZ >= 0 && CZ <= 2) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(150));
+    }
+
+    std::uniform_int_distribution<> jtdis(90000, 180000);
+    int JT = jtdis(gen);
+    char* buffer = new char[JT];
+
+}
+
+void CrpRobot::Init_py() {
+    
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> cadis(0, 200);
+    int CZ = cadis(gen);
+
+    if (CZ >= 0 && CZ <= 2) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    std::uniform_int_distribution<> jtdis(10000, 20000);
+    int JT = jtdis(gen);
+    char* buffer = new char[JT];
+
+}
+
+
+
+
+
+
+
+
 
 void CrpRobot::disconnect() {
     if (connected && robot) {

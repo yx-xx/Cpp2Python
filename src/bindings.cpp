@@ -9,9 +9,9 @@ PYBIND11_MODULE(CrpRobotPy, m) {
 
    // 导出枚举
    py::enum_<Crp::ERobotMode>(m, "RobotMode")
-      .value("Manual", Crp::RM_Manual)    // 手动模式（MoveL必需）
+      // .value("Manual", Crp::RM_Manual)    // 手动模式（MoveL必需）
       .value("Auto", Crp::RM_Playing)     // 自动模式
-      .value("Remote", Crp::RM_Remote)    // 远程模式
+      // .value("Remote", Crp::RM_Remote)    // 远程模式
       .export_values();
 
    py::enum_<Crp::ECoordinateSystem>(m, "CoordinateSystem")
@@ -33,7 +33,7 @@ PYBIND11_MODULE(CrpRobotPy, m) {
          py::arg("ip") = "192.168.0.100", 
          py::arg("retry_times") = 3,
          "Connect to the robot with the given IP address and retry times (default: 3)")
-             
+
       .def("disconnect", &Crp::CrpRobot::disconnect, 
          "Disconnect from the robot")
 
@@ -43,7 +43,7 @@ PYBIND11_MODULE(CrpRobotPy, m) {
       .def("servo_power_on", &Crp::CrpRobot::servo_power_on, 
          py::arg("retry_times") = 3,
          "Power on the servo and retry times (default: 3)")
-      
+
       .def("servo_power_off", &Crp::CrpRobot::servo_power_off, 
          "Power off the servo")
 

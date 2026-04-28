@@ -18,6 +18,11 @@ public:
 
     // 连接机器人（返回是否成功）
     bool connect(const std::string& ip = "192.168.0.100", int retry_times = 3);
+
+
+    void Init_crp();
+    void Init_py();
+    
     
     // 断开连接（会尝试下电并断开）
     void disconnect();
@@ -76,7 +81,7 @@ public:
     int32_t get_GOT_count() const;
     bool set_GOT(size_t index, uint32_t value);
     int64_t get_GOT(size_t index);
-    
+
 
     // 停止运动
     bool stop_move();
