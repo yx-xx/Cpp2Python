@@ -115,7 +115,7 @@ public:
   }
 
   /// <summary>
-  /// 根据接口ID, 创建接口服务
+  /// 根据接口ID, 获取接口服务，如果接口未被创建, 自动创建接口，内存由CSDKLoader管理
   /// </summary>
   /// <typeparam name="T">接口类，如IRobotService</typeparam>
   /// <param name="serviceId">接口ID, 如ID_ROBOT_SERVICE</param>
@@ -124,6 +124,7 @@ public:
   /// - 失败返回nullptr
   /// </returns>
   /// \note 注意接口类与接口ID要保持一致
+  /// @attention 此函数获取的接口内存由CSDKLoader管理, 在CSDKLoader析构时被自动释放。
   template <typename T>
   T* getService(const char* serviceId) {
     if (!mCreator || !mDeleter) {
@@ -169,6 +170,7 @@ public:
   /// - 失败返回nullptr
   /// </returns>
   /// \note 注意接口类与接口ID要保持一致
+  /// @attention 接口创建的内存由用户管理, 释放的接口为 @see deleteService, 如未正常释放，会造成内存泄露
   template <typename T>
   T* createService(const char* serviceId) {
     if (!mCreator || !mDeleter) {

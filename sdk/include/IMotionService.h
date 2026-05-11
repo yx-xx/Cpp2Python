@@ -194,7 +194,7 @@ public:
   /// 按sendPath的轨迹开始移动, 开始move后，可以连接发送
   /// </summary>
   /// <param name="ratio">路径插补周期2ms的倍率，范围1-50</param>
-  /// <returns>见 <see cef="EMovePathResult"/> </returns>
+  /// <returns>见 <see cref="EMovePathResult"/> </returns>
   /// \attention 机器人当前位置如果不在第一个点，机器人会首先以关节运动的方式，移动到第1个点，再以插补周期的数据进行移动
   /// \attention 指令运行在GuidancePosRun时，才能调用成功
   virtual EMovePathResult movePath(int32_t ratio) = 0;

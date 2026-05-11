@@ -10,6 +10,7 @@
 
 #include <stdint.h>
 #include <cstddef>
+#include "EErrorCode.h"
 
 namespace Crp {
 
@@ -93,24 +94,24 @@ struct SRobotPosture {
 };
 
 /// <summary>
-/// 标准DH参数
+/// 标准DH参数, 查看DH参数：示教器中打开菜单/参数设置/机构参数页面
 /// </summary>
 struct SStdDHParam {
-  double a1;
-  double a2;
-  double a3;
-  double a4;
-  double a5;
-  double a6;
-  double a7;
+  double a1;  ///< 连杆参数1
+  double a2;  ///< 连杆参数2
+  double a3;  ///< 连杆参数3
+  double a4;  ///< 连杆参数4
+  double a5;  ///< 连杆参数5
+  double a6;  ///< 连杆参数6
+  double a7;  ///< 连杆参数7
 
-  double d1;
-  double d2;
-  double d3;
-  double d4;
-  double d5;
-  double d6;
-  double d7;
+  double d1;  ///< 连杆参数8
+  double d2;  ///< 连杆参数9
+  double d3;  ///< 连杆参数10
+  double d4;  ///< 连杆参数11
+  double d5;  ///< 连杆参数12
+  double d6;  ///< 连杆参数13
+  double d7;  ///< 连杆参数14
 };
 
 /// <summary>

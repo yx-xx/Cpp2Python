@@ -26,7 +26,7 @@ public:
   /// 连接机器人控制柜
   /// </summary>
   /// <param name="ip"></param>
-  /// <param name="disableSafekey">屏蔽示教器安全开关, 如果不屏蔽，SDK在手动模式下无法使能</param>
+  /// <param name="disableHardware">屏蔽示教器安全开关, 如果不屏蔽，SDK在手动模式下无法使能</param>
   /// <returns>
   /// - true: 成功
   /// - false: 失败
@@ -791,7 +791,7 @@ public:
   /// <summary>
   /// 恢复上次暂停的程序
   /// </summary>
-  /// <param name="program"></param>
+  /// <param name="program">恢复的程序名</param>
   /// <returns>
   /// - true: 设置成功
   /// - false: 设置失败
@@ -868,8 +868,11 @@ public:
 
   /// <summary>
   /// 特别注意：软急停， 无法与示教盒的硬急停同时使用
-  /// 使用了SDK连接控制的方式，硬急停会被屏蔽
+  /// 使用了SDK连接控制的方式，硬急停会被屏蔽, 二者无法混用：
+  /// - 软急停，使用软急停复位
+  /// - 硬急停，则使用硬急停复位
   /// </summary>
+  /// <param name="enable">急停开或关</param>
   /// <returns>
   /// - true: 设置成功
   /// - false: 设置失败
@@ -898,7 +901,7 @@ public:
   /// <summary>
   /// 修改GJ999变量，并移动到GJ999
   /// </summary>
-  /// <param name="pos"></param>
+  /// <param name="pos">目标关节位置</param>
   /// <returns>
   /// - true: 设置成功
   /// - false: 设置失败
@@ -909,7 +912,7 @@ public:
   /// <summary>
   /// 手动模式下, 修改GP999变量，并移动到GP999
   /// </summary>
-  /// <param name="pos"></param>
+  /// <param name="pos">目标笛卡尔位置</param>
   /// <returns>
   /// - true: 设置成功
   /// - false: 设置失败
@@ -964,6 +967,8 @@ public:
   /// - true
   /// - false
   /// </returns>
+  /// > \attention
+  /// - 注意：此方法请匆在程序运行时获取, 否则可能会出错
   virtual bool getCurrentJoint(SJointPosition& pos) = 0;
 
   /// <summary>
@@ -991,19 +996,19 @@ public:
   virtual bool isConnected() = 0;
 
   /// @brief 打开协作模式，开启后，用户可以按下拖动按钮进行拖动操作
-  /// @param[IN] enable
+  /// @param[in] enable 是否开启协作模式
   /// @return
   /// - true 设置成功
   /// - false 设置失败
   virtual bool enableCobotMode(bool enable) = 0;
 
   /// @brief 打开协作模式，并保持伺服使能
-  /// @param[IN] enable 协作模式开/关
-  /// @param[IN] keepServoOn 保持伺服使能
+  /// @param [in] enable 协作模式开/关
+  /// @param [in] keepServoOn 保持伺服使能
   /// @return
   /// - true 设置成功
   /// - false 设置失败
-  /// > \attention
+  /// @attention
   /// - 如果当前工具负载设置不正确，打开协作模式，会有起撞机风险！！！
   inline bool enableCobotMode(bool enable, bool keepServoOn) {
     bool isOk = false;
@@ -1027,5 +1032,22 @@ public:
   /// - true 设置成功
   /// - false 设置失败
   virtual bool isCobotModeEnabled() = 0;
+
+  /// @brief 获取设备之间的标定关系，如果有多个标定关系，依次类推
+  ///  - 0 - R1 to B1
+  ///  - 1 - B1 to World
+  ///  - 2 - E1 to B1
+  ///  - 3 - E2 to B1
+  ///  - ...
+  /// @param [in] relationIdx 见上描述
+  /// @param [out] pose 返回标定关系
+  /// @return
+  /// - EC_OK                = 0x00
+  /// - EC_NetworkError      = 0x01
+  /// - EC_InvalidParameter  = 0x02
+  /// - EC_OutOfRange        = 0x03
+  /// - EC_NotSupportMethod  = 0x06
+  /// @since 1.1.0
+  virtual int getDeviceRelation(size_t relationIdx, SRobotPosture* pose) = 0;
 };
 }  // namespace Crp

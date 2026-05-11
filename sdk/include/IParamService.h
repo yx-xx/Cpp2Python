@@ -55,5 +55,10 @@ public:
   /// <param name="value">要设置的参数值</param>
   /// <returns>成功返回true, 失败返回false</returns>
   virtual bool setBodyParam(size_t jointIndex, ERobotParam param, double const& value) = 0;
+
+  /// @brief 读取当前连接的机器人的DH参数
+  /// @param param [OUT] DH参数
+  /// @return errorCode @see EErrorCode
+  virtual int32_t getDHParam(SStdDHParam* param) = 0;
 };
 }  // namespace Crp
