@@ -57,12 +57,34 @@ public:
   /// <summary>
   /// 初始化DLL接口
   /// </summary>
+  /// <param name="isolated_namespace">
+  /// Linux+glibc 下为 true 时使用 dlmopen 新建链接命名空间，使同一路径的 .so
+  /// 再加载一份独立的全局状态（双机必备）。默认 false 与普通 dlopen 一致。
+  /// </param>
   /// <returns></returns>
-  bool initialize() {
+  bool initialize(bool isolated_namespace = false) {
 #ifdef _WIN32
+    (void)isolated_namespace;
     mhModule = LoadLibraryA(mSdkDllPath.c_str());
 #else
-    mhModule = ::dlopen(mSdkDllPath.c_str(), RTLD_LAZY);
+    mhModule = nullptr;
+    if (isolated_namespace) {
+#if defined(__linux__) && defined(__GLIBC__)
+      mhModule = ::dlmopen(LM_ID_NEWLM, mSdkDllPath.c_str(), RTLD_NOW | RTLD_LOCAL);
+      if (!mhModule) {
+        std::cerr << "[CSDKLoader] error: dlmopen (isolated) failed: " << ::dlerror() << "\n";
+        return false;
+      }
+#else
+      std::cerr << "[CSDKLoader] warning: no dlmopen on this libc; falling back to dlopen (dual-arm may conflict)\n";
+#endif
+    }
+    if (!mhModule) {
+      mhModule = ::dlopen(mSdkDllPath.c_str(), RTLD_LAZY);
+      if (!mhModule) {
+        return false;
+      }
+    }
 #endif
 
     if (!mhModule) {

@@ -14,7 +14,10 @@ CrpRobot::CrpRobot()
     , model_service(nullptr)
     , io_service(nullptr)
     , connected(false)
-    , servo_on(false) {
+    , servo_on(false)
+    , loader2(nullptr)
+    , robot2(nullptr)
+    , connected2(false) {
     // 初始化SDK加载器（默认加载RobotService库）
     loader = new CSDKLoader(ROBOT_SERVICE_NAME);
 }
@@ -24,6 +27,10 @@ CrpRobot::~CrpRobot() {
     // 自动断开会导致 Python 对象被回收时连接被意外关闭，
     // 从而不能达到“下电但保持连接”的使用需求。
     // 仅释放 loader 资源（如果需要完整释放 SDK，请显式调用 disconnect()）。
+    if (loader2) {
+        delete loader2;
+        loader2 = nullptr;
+    }
     if (loader) {
         delete loader;
         loader = nullptr;
@@ -78,6 +85,61 @@ bool CrpRobot::connect(const std::string& ip, int retry_times) {
 
     std::cerr << "[CrpRobot] error: 连接机器人失败（IP: " << ip << "）\n";
     return false;
+}
+
+bool CrpRobot::connect_second(const std::string& ip, int retry_times) {
+    if (connected2) {
+        disconnect_second();
+    }
+
+    if (!loader2) {
+        loader2 = new CSDKLoader(ROBOT_SERVICE_NAME);
+    }
+
+    // Linux+glibc：第二路必须用独立链接命名空间加载同一路径 .so，否则 dlopen 与主程序
+    // 会合并为同一映像，SDK 内全局连接状态被后连的一台覆盖，表现为只能控制第二台。
+#if defined(__linux__) && defined(__GLIBC__)
+    if (!loader2->initialize(true)) {
+#else
+    if (!loader2->initialize(false)) {
+#endif
+        std::cerr << "[CrpRobot] error: 第二路 SDK 初始化失败\n";
+        return false;
+    }
+
+    robot2 = loader2->getService<IRobotService>(ID_ROBOT_SERVICE);
+    if (!robot2) {
+        std::cerr << "[CrpRobot] error: 无法获取第二台机器人服务接口\n";
+        return false;
+    }
+
+    for (int i = 0; i < retry_times; ++i) {
+        if (robot2->connect(ip.c_str(), true)) {
+            connected2 = true;
+            if (switch_to_manual_mode_for(robot2)) {
+                return true;
+            }
+            std::cerr << "[CrpRobot] error: 第二台连接成功但切换手动模式失败，重试连接...\n";
+            robot2->disconnect();
+            connected2 = false;
+        }
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+
+    std::cerr << "[CrpRobot] error: 连接第二台机器人失败（IP: " << ip << "）\n";
+    return false;
+}
+
+void CrpRobot::disconnect_second() {
+    if (connected2 && robot2) {
+        robot2->servoPowerOff();
+        robot2->disconnect();
+        std::cout << "[CrpRobot] info: 第二台机器人已断开连接\n";
+    }
+    connected2 = false;
+    if (loader2) {
+        loader2->deinitialize();
+    }
 }
 
 
@@ -155,7 +217,13 @@ int CrpRobot::get_work_mode() const {
 }
 
 bool CrpRobot::switch_to_manual_mode() {
-    return switch_work_mode(RM_Manual);
+    if (!robot || !connected) return false;
+    return switch_to_manual_mode_for(robot);
+}
+
+bool CrpRobot::switch_to_manual_mode_for(IRobotService* r) {
+    if (!r) return false;
+    return r->setWorkMode(static_cast<int>(RM_Manual));
 }
 
 bool CrpRobot::servo_power_on(int retry_times) {
@@ -280,7 +348,7 @@ bool CrpRobot::movel_user(const std::vector<double>& target_pose) {
     target.Rz = target_pose[5];
     
     // 计算并设置cfg
-    if (!calculate_cfg(target, target)) {
+    if (!calculate_cfg_for(robot, target, target)) {
         std::cerr << "[CrpRobot] error: 计算cfg失败\n";
         return false;
     }
@@ -342,18 +410,16 @@ int CrpRobot::get_speed_ratio() const {
     return robot->getSpeedRatio();
 }
 
-// 批量写入 GP
-bool CrpRobot::set_GPs(size_t start_index, const std::vector<std::vector<double>>& points) {
-    if (!connected || !robot) {
+bool CrpRobot::set_GPs_impl(IRobotService* r, bool conn, size_t start_index,
+                            const std::vector<std::vector<double>>& points) {
+    if (!conn || !r) {
         std::cerr << "[CrpRobot] error: 未连接机器人，无法写入GP\n";
         return false;
     }
-
     if (points.empty()) {
         return true;
     }
- 
-    // 准备 SDK 的 SRobotPosition 数组
+
     std::vector<SRobotPosition> arr;
     arr.resize(points.size());
 
@@ -364,7 +430,6 @@ bool CrpRobot::set_GPs(size_t start_index, const std::vector<std::vector<double>
             return false;
         }
         SRobotPosition& s = arr[i];
-        // 清零所有字段以防未初始化值
         std::memset(&s, 0, sizeof(SRobotPosition));
         s.x = p[0];
         s.y = p[1];
@@ -373,17 +438,27 @@ bool CrpRobot::set_GPs(size_t start_index, const std::vector<std::vector<double>
         s.Ry = p[4];
         s.Rz = p[5];
 
-        calculate_cfg(s,s);
+        if (!calculate_cfg_for(r, s, s)) {
+            std::cerr << "[CrpRobot] error: 计算cfg失败 index=" << i << "\n";
+            return false;
+        }
     }
 
-    // 调用 SDK 批量写入 GP
-    bool ok = robot->setGP(start_index, arr.data(), arr.size());
-    if (!ok) {
+    if (!r->setGP(start_index, arr.data(), arr.size())) {
         std::cerr << "[CrpRobot] error: 写入GP失败，start_index=" << start_index << " count=" << arr.size() << "\n";
         return false;
     }
 
     return true;
+}
+
+// 批量写入 GP
+bool CrpRobot::set_GPs(size_t start_index, const std::vector<std::vector<double>>& points) {
+    return set_GPs_impl(robot, connected, start_index, points);
+}
+
+bool CrpRobot::set_GPs_second(size_t start_index, const std::vector<std::vector<double>>& points) {
+    return set_GPs_impl(robot2, connected2, start_index, points);
 }
 
 // 整形全局变量 (GI) 读写
@@ -487,10 +562,11 @@ bool CrpRobot::set_GJs(size_t start_index, const std::vector<std::vector<double>
 }
 
 
-bool CrpRobot::calculate_cfg(const SRobotPosition& target_pose, SRobotPosition& target_with_cfg) {
-    // 获取当前关节位置（包含cfg信息）
+bool CrpRobot::calculate_cfg_for(IRobotService* r, const SRobotPosition& target_pose,
+                                 SRobotPosition& target_with_cfg) {
+    if (!r) return false;
     SJointPosition current_joints;
-    if (!robot->getCurrentJoint(current_joints)) {
+    if (!r->getCurrentJoint(current_joints)) {
         std::cerr << "[CrpRobot] error: 无法获取当前关节位置\n";
         return false;
     }

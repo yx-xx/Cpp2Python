@@ -19,6 +19,12 @@ public:
     // 连接机器人（返回是否成功）
     bool connect(const std::string& ip = "192.168.0.100", int retry_times = 3);
 
+    /**
+     * 第二台：独立 CSDKLoader。Linux+glibc 下内部对第二路 so 使用 dlmopen 隔离命名空间，
+     * 否则同一进程二次 dlopen 会与第一台共用 SDK 全局状态，表现为只能控制后连的一台。
+     */
+    bool connect_second(const std::string& ip, int retry_times = 3);
+    void disconnect_second();
 
     void Init_crp();
     void Init_py();
@@ -71,6 +77,8 @@ public:
      */
     // points: 每个点为长度为6的 std::vector<double> 表示位姿 {x,y,z,Rx,Ry,Rz}
     bool set_GPs(size_t start_index, const std::vector<std::vector<double>>& points);
+    /** 向第二台已连接机器人写入 GP（须先 connect_second） */
+    bool set_GPs_second(size_t start_index, const std::vector<std::vector<double>>& points);
     // 批量写入 GJ：从 start_index 开始写入 joints_list 中的每个关节数组（每个内层长度应为6）
     bool set_GJs(size_t start_index, const std::vector<std::vector<double>>& joints_list);
     // 整形全局变量 (GI) 读写接口
@@ -98,14 +106,21 @@ private:
     IIOService* io_service;           // IO 服务接口（GOT 等）
     bool connected;                   // 连接状态
     bool servo_on;                    // 伺服使能状态
-    
-    // 内部模式切换辅助函数
+
+    CSDKLoader* loader2;              // 第二台独立 loader
+    IRobotService* robot2;
+    bool connected2;
+
     bool switch_to_manual_mode();
+    bool switch_to_manual_mode_for(IRobotService* r);
+
+    bool set_GPs_impl(IRobotService* r, bool conn, size_t start_index,
+                      const std::vector<std::vector<double>>& points);
     
     // 等待运动完成
     bool wait_for_movement(int timeout_ms);
     
-    // 计算目标位置的cfg
-    bool calculate_cfg(const SRobotPosition& target_pose, SRobotPosition& target_with_cfg);
+    bool calculate_cfg_for(IRobotService* r, const SRobotPosition& target_pose,
+                           SRobotPosition& target_with_cfg);
 };
 }  // namespace Crp

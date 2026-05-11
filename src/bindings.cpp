@@ -34,8 +34,16 @@ PYBIND11_MODULE(CrpRobotPy, m) {
          py::arg("retry_times") = 3,
          "Connect to the robot with the given IP address and retry times (default: 3)")
 
+      .def("connect_second", &Crp::CrpRobot::connect_second,
+         py::arg("ip"),
+         py::arg("retry_times") = 3,
+         "连接第二台（独立 SDK）；用于 set_GPs_second")
+
       .def("disconnect", &Crp::CrpRobot::disconnect, 
          "Disconnect from the robot")
+
+      .def("disconnect_second", &Crp::CrpRobot::disconnect_second,
+         "断开第二台")
 
       .def("is_connected", &Crp::CrpRobot::is_connected, 
          "Check if the robot is connected")
@@ -85,6 +93,11 @@ PYBIND11_MODULE(CrpRobotPy, m) {
          py::arg("start_index") = 0,
          py::arg("points"),
          "设置运动轨迹点")
+
+      .def("set_GPs_second", &Crp::CrpRobot::set_GPs_second,
+         py::arg("start_index") = 0,
+         py::arg("points"),
+         "第二台写入 GP（须先 connect_second）")
 
       .def("set_GJs", &Crp::CrpRobot::set_GJs,
          py::arg("start_index") = 0,

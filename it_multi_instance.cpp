@@ -45,7 +45,12 @@ int main(int argc, const char* argv[]) {
     return -1;
   }
 
-  if (!loader_2.initialize()) {
+  // 第二路在 Linux+glibc 上须 isolated 加载，否则与 loader_1 共享同一套 SDK 全局状态
+#if defined(__linux__) && defined(__GLIBC__)
+  if (!loader_2.initialize(true)) {
+#else
+  if (!loader_2.initialize(false)) {
+#endif
     printf("Fail to initialize");
     return -1;
   }

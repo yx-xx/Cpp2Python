@@ -95,6 +95,9 @@ target_link_libraries(${PY_MODULE_NAME}
 
 if(UNIX AND NOT APPLE)
     target_link_libraries(${PY_MODULE_NAME} PRIVATE pthread dl)
+    # dlmopen / LM_ID_NEWLM 声明依赖 GNU 特性测试宏
+    target_compile_definitions(${CORE_TARGET_NAME} PRIVATE _GNU_SOURCE)
+    target_compile_definitions(${PY_MODULE_NAME} PRIVATE _GNU_SOURCE)
 endif()
 
 
